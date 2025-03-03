@@ -1,6 +1,6 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
-  View, Text, SafeAreaView, TouchableOpacity, Modal, TextInput, StyleSheet, Animated 
+  View, Text, SafeAreaView, TouchableOpacity, Modal, TextInput, StyleSheet, Animated,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import ScrollableList from './ScrollableListBios';
@@ -11,22 +11,43 @@ const BiosPage = () => {
   const slideAnim = useRef(new Animated.Value(-250)).current; // For sidebar animation
   const [showModal, setShowModal] = useState(false);
 
-  const [profiles, setProfiles] = useState([
-    { id: '1', name: 'John Doe', description: 'Pet: Buddy | ID: 12345 | 📧 john@example.com | 📞 555-1234' },
-    { id: '2', name: 'Jane Smith', description: 'Pet: Milo | ID: 67890 | 📧 jane@example.com | 📞 555-5678' },
-    { id: '3', name: 'John Doe', description: 'Pet: Buddy | ID: 12345 | 📧 john@example.com | 📞 555-1234' },
-    { id: '4', name: 'Jane Smith', description: 'Pet: Milo | ID: 67890 | 📧 jane@example.com | 📞 555-5678' },
-    { id: '5', name: 'John Doe', description: 'Pet: Buddy | ID: 12345 | 📧 john@example.com | 📞 555-1234' },
-    { id: '6', name: 'Jane Smith', description: 'Pet: Milo | ID: 67890 | 📧 jane@example.com | 📞 555-5678' },
-    { id: '7', name: 'John Doe', description: 'Pet: Buddy | ID: 12345 | 📧 john@example.com | 📞 555-1234' },
-    { id: '8', name: 'Jane Smith', description: 'Pet: Milo | ID: 67890 | 📧 jane@example.com | 📞 555-5678' },
-    { id: '9', name: 'John Doe', description: 'Pet: Buddy | ID: 12345 | 📧 john@example.com | 📞 555-1234' },
-    { id: '10', name: 'Jane Smith', description: 'Pet: Milo | ID: 67890 | 📧 jane@example.com | 📞 555-5678' },
-    { id: '11', name: 'John Doe', description: 'Pet: Buddy | ID: 12345 | 📧 john@example.com | 📞 555-1234' },
-    { id: '12', name: 'Jane Smith', description: 'Pet: Milo | ID: 67890 | 📧 jane@example.com | 📞 555-5678' },
-    { id: '13', name: 'John Doe', description: 'Pet: Buddy | ID: 12345 | 📧 john@example.com | 📞 555-1234' },
-    { id: '14', name: 'Jane Smith', description: 'Pet: Milo | ID: 67890 | 📧 jane@example.com | 📞 555-5678' },
-  ]);
+  const API_URL = "https://aaupetrescue-hta0efhnh2gtgrcv.eastus2-01.azurewebsites.net";
+
+
+  const [profiles, setProfiles] = useState([]);
+
+  const fetchProfiles = async () => {
+    try {
+        console.log("Fetching profiles from:", API_URL);
+
+        const response = await fetch(`${API_URL}`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+            },
+        });
+
+        console.log("Response Status:", response.status);
+        console.log("Response Headers:", response.headers);
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log("Response Data:", data);
+        setProfiles(data);
+    } catch (error) {
+        console.error("Error fetching profiles:", error);
+    }
+};
+
+
+  // Fetch data on component mount
+  useEffect(() => {
+      fetchProfiles();
+  }, []);
+
 
   const [newProfile, setNewProfile] = useState({
     name: '',
@@ -34,6 +55,7 @@ const BiosPage = () => {
     petId: '',
     email: '',
     phone: '',
+    preferredContactTime: '',
   });
 
   // Open & Close Sidebar
@@ -47,20 +69,49 @@ const BiosPage = () => {
   };
 
   // Add new profile
-  const addNewProfile = () => {
-    if (newProfile.name && newProfile.petName && newProfile.petId && newProfile.email && newProfile.phone && newProfile.preferredContactTime) {
-      setProfiles([
-        ...profiles, 
-        { 
-          id: String(profiles.length + 1), 
-          name: newProfile.name, 
-          description: `Pet: ${newProfile.petName} | ID: ${newProfile.petId} | 📧 ${newProfile.email} | 📞 ${newProfile.phone} | Contact Time: ${newProfile.preferredContactTime}` 
-        }
-      ]);
-      setNewProfile({ name: '', petName: '', petId: '', email: '', phone: '', preferredContactTime: '' });
-      setShowModal(false);
+  const addNewProfile = async () => {
+    if (Object.values(newProfile).some((val) => val.trim() === "")) {
+        console.error("All fields are required.");
+        return;
     }
-  };
+
+    try {
+        console.log("Adding new profile:", newProfile);
+
+        const response = await fetch(`${API_URL}`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(newProfile),
+        });
+
+        console.log("Response Status:", response.status);
+        console.log("Response Headers:", response.headers);
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(`Failed to add profile: ${JSON.stringify(errorData)}`);
+        }
+
+        console.log("Profile added successfully!");
+
+        fetchProfiles(); // Refresh profiles
+        setShowModal(false);
+        setNewProfile({
+            name: "",
+            petName: "",
+            petId: "",
+            email: "",
+            phone: "",
+            preferredContactTime: "",
+        });
+    } catch (error) {
+        console.error("Error adding profile:", error);
+    }
+};
+
+
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -134,8 +185,8 @@ const BiosPage = () => {
               style={styles.input}
               placeholder="Contact Time"
               keyboardType="phone-pad"
-              value={newProfile.phone}
-              onChangeText={(text) => setNewProfile({ ...newProfile, phone: text })}
+              value={newProfile.preferredContactTime}
+              onChangeText={(text) => setNewProfile({ ...newProfile, preferredContactTime: text })}
             />
             <TouchableOpacity style={styles.saveButton} onPress={addNewProfile}>
               <Text style={styles.saveButtonText}>Save</Text>
