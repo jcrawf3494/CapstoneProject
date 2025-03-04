@@ -30,13 +30,13 @@ pool.query('SELECT NOW()', (err, res) => {
     }
 });
 
-//  API Route to Fetch Profiles
+//  API Route to Fetch Bios
 app.get('/api/profiles', async (req, res) => {
     try {
-        const result = await pool.query('SELECT * FROM profiles');
+        const result = await pool.query('SELECT * FROM fosters');
         res.json(result.rows);
     } catch (error) {
-        console.error('Error fetching profiles:', error);
+        console.error('Error fetching fosters:', error);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });
