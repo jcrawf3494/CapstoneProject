@@ -11,9 +11,9 @@ const PORT = process.env.PORT || 8081;
 // Middleware
 app.use(bodyParser.json());
 
-// Updated CORS Configuration (Allow Requests from Frontend)
+// Improved CORS Configuration
 app.use(cors({
-    origin: ['http://localhost:8081', 'https://yourapp.azurewebsites.net'],
+    origin: '*',  // Allow all origins for debugging (Change this in production)
     methods: 'GET,POST,PUT,DELETE,OPTIONS',
     allowedHeaders: 'Content-Type,Authorization'
 }));
@@ -24,17 +24,16 @@ const pool = new Pool({
     ssl: { rejectUnauthorized: false }
 });
 
-// Test Database Connection
-pool.connect((err, client, release) => {
+// Test Database Connection (Better way)
+pool.query('SELECT NOW()', (err, res) => {
     if (err) {
-        console.error(' Error connecting to PostgreSQL:', err.stack);
+        console.error(' Database connection failed:', err.stack);
     } else {
-        console.log('Connected to PostgreSQL successfully!');
+        console.log('Connected to PostgreSQL:', res.rows[0]);
     }
-    release();
 });
 
-// API Routes (Prefix with `/api`)
+//  API Routes (Prefix with `/api`)
 app.get('/api', (req, res) => {
     res.send('Welcome to the AAUPR Backend API!');
 });
@@ -50,14 +49,18 @@ app.get('/api/profiles', async (req, res) => {
     }
 });
 
-// Serve Frontend (React Native Web)
+//  Serve Frontend (React Native Web)
 app.use(express.static(path.join(__dirname, 'web-build')));
 
-app.get('*', (req, res) => {
+// Only Serve Frontend for Non-API Routes
+app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) {
+        return next(); // Skip serving frontend for API routes
+    }
     res.sendFile(path.join(__dirname, 'web-build', 'index.html'));
 });
 
 // Start Server
 app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
