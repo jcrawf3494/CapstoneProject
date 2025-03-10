@@ -1,39 +1,40 @@
-require('dotenv').config(); // Load environment variables from .env
-
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const { Pool } = require('pg');
 
+
 const app = express();
 const PORT = process.env.PORT || 8080;
 
 // Middleware
-app.use(cors());
 app.use(bodyParser.json());
+app.use(cors({
+    origin: ['http://localhost:8080', 'http://localhost:8081'], // Allow frontend requests (adjust later for deployment)
+    methods: 'GET,POST,PUT,DELETE,OPTIONS',
+    allowedHeaders: 'Content-Type,Authorization'
+}));
 
-// PostgreSQL Connection Pool
+// PostgreSQL Database Connection
 const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: {
-        rejectUnauthorized: false // Required for Azure PostgreSQL
-    }
+    connectionString: "postgresql://adminuser:BestLife224%24@aaupre-db.postgres.database.azure.com:5432/postgres",
+    ssl: { rejectUnauthorized: false }
 });
 
 // Test Database Connection
-pool.connect((err, client, release) => {
+pool.query('SELECT NOW()', (err, res) => {
     if (err) {
-        console.error(' Error connecting to PostgreSQL:', err.stack);
+        console.error('Database connection failed:', err.stack);
     } else {
-        console.log(' Connected to PostgreSQL successfully!');
+        console.log('Connected to PostgreSQL:', res.rows[0]);
     }
-    release(); // Release the connection
 });
 
-// **GET /api/fosters** - Fetch all fosters from the database
-app.get('/api/fosters', async (req, res) => {
+//  API Route to Fetch Profiles
+app.get('/api/profiles', async (req, res) => {
     try {
-        const result = await pool.query('SELECT * FROM fosters ORDER BY id ASC'); // Fetch all records
+        const result = await pool.query('SELECT * FROM fosters');
         res.json(result.rows);
     } catch (error) {
         console.error('Error fetching fosters:', error);
@@ -42,7 +43,7 @@ app.get('/api/fosters', async (req, res) => {
 });
 
 // **POST /api/fosters** - Add a new foster/pet to the database
-app.post('/api/fosters', async (req, res) => {
+app.post('/api/profiles', async (req, res) => {
     try {
         const { name, phone_number, email, pet_name, preferred_contact_time } = req.body;
 
@@ -89,5 +90,5 @@ app.get('/', (req, res) => {
 
 // **Start Server**
 app.listen(PORT, () => {
-    console.log(`🚀 Server running on http://localhost:${PORT}`);
+    console.log(` Server running on http://localhost:${PORT}`);
 });
