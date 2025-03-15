@@ -10,7 +10,10 @@ const ScrollableListBios = ({ title, data }) => (
       renderItem={({ item }) => (
         <View style={styles.item}>
           <Text style={styles.title}>{item.name}</Text>
-          <Text style={styles.description}>{item.description}</Text>
+          <Text style={styles.description}>Email: {item.email}</Text>
+          <Text style={styles.description}>Phone: {item.phone_number}</Text>
+          <Text style={styles.description}>Pet Name: {item.pet_name}</Text>
+          <Text style={styles.description}>Preferred Contact Time: {item.preferred_contact_time}</Text>
         </View>
       )}
       style={styles.flatList}
