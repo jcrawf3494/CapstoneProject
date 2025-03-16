@@ -31,6 +31,10 @@ pool.query('SELECT NOW()', (err, res) => {
     }
 });
 
+// Allowed preferred_contact_time values
+const validContactTimes = ['7AM-10AM', '10AM-12PM', '12PM-2PM', '2PM-5PM', '5PM-8PM']
+
+
 //  API Route to Fetch Profiles
 app.get('/api/profiles', async (req, res) => {
     try {
@@ -45,12 +49,25 @@ app.get('/api/profiles', async (req, res) => {
 // **POST /api/fosters** - Add a new foster/pet to the database
 app.post('/api/profiles', async (req, res) => {
     try {
+
+        console.log("Received data:", req.body)
+
         const { name, phone_number, email, pet_name, preferred_contact_time } = req.body;
 
+        // Validate fields
         if (!name || !phone_number || !email || !pet_name || !preferred_contact_time) {
             return res.status(400).json({ error: "All fields are required" });
         }
 
+        console.log("Preferred contact time:", preferred_contact_time);
+        console.log("Valid options:", validContactTimes)
+
+        // Validate preferred_contact_time
+        if (!validContactTimes.includes(preferred_contact_time)) {
+            return res.status(400).json({ error: "Invalid preferred contact time. Allowed values: " + validContactTimes.join(', ') });
+        }
+
+    
         const result = await pool.query(
             `INSERT INTO fosters (name, phone_number, email, pet_name, preferred_contact_time) 
              VALUES ($1, $2, $3, $4, $5) RETURNING *`,
