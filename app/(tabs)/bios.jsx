@@ -3,6 +3,7 @@ import {
   View, Text, SafeAreaView, TouchableOpacity, Modal, TextInput, StyleSheet, Animated,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
+import { Picker } from '@react-native-picker/picker';
 import ScrollableList from './ScrollableListBios';
 import NavigationDrawer from './NavigationDrawer';
 
@@ -176,12 +177,18 @@ const BiosPage = () => {
               value={newProfile.pet_name}
               onChangeText={(text) => setNewProfile({ ...newProfile, pet_name: text })}
             />
-            <TextInput
-              style={styles.input}
-              placeholder="Contact Time"
-              value={newProfile.preferred_contact_time}
-              onChangeText={(text) => setNewProfile({ ...newProfile, preferred_contact_time: text })}
-            />
+            <Picker
+              selectedValue={newProfile.preferred_contact_time}
+              onValueChange={(itemValue) => setNewProfile({ ...newProfile, preferred_contact_time: itemValue })}
+              style={styles.picker}
+            >
+              <Picker.Item label="Preferred Contact Time" value="" />
+              <Picker.Item label="7AM-10AM" value="7AM-10AM" />
+              <Picker.Item label="10AM-12PM" value="10AM-12PM" />
+              <Picker.Item label="12PM-2PM" value="12PM-2PM" />
+              <Picker.Item label="2PM-5PM" value="2PM-5PM" />
+              <Picker.Item label="5PM-8PM" value="5PM-8PM" />
+            </Picker>
             
             <TouchableOpacity style={styles.saveButton} onPress={addNewProfile}>
               <Text style={styles.saveButtonText}>Save</Text>
@@ -277,6 +284,14 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     color: 'white',
     fontWeight: 'bold',
+  },
+  picker: {
+    width: '100%',
+    height: 50,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 5,
+    marginBottom: 10,
   },
 });
 
