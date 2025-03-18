@@ -8,6 +8,8 @@ import ScrollableList from './ScrollableListBios';
 import NavigationDrawer from './NavigationDrawer';
 
 const BiosPage = () => {
+
+  
   const [menuOpen, setMenuOpen] = useState(false);
   const slideAnim = useRef(new Animated.Value(-250)).current; // For sidebar animation
   const [showModal, setShowModal] = useState(false);
