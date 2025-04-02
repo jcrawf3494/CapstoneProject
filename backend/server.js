@@ -19,7 +19,7 @@ app.use(cors({
 
 // PostgreSQL Database Connection
 const pool = new Pool({
-  connectionString: "postgresql://adminuser:BestLife224%24@aaupre-db.postgres.database.azure.com:5432/postgres",
+  connectionString: "REQUEST FROM KATLIN",
   ssl: { rejectUnauthorized: false }
 });
 
