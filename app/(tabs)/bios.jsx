@@ -206,29 +206,6 @@ const BiosPage = () => {
 };
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#f8f8f8',
-  },
-  navBar: {
-    width: '100%',
-    height: 60,
-    backgroundColor: '#333',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-  },
-  navTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: 'white',
-  },
-  listContainerBios: {
-    flex: 1,
-    alignItems: 'center',
-    marginTop: 20,
-  },
   addButton: {
     position: 'absolute',
     bottom: 30,
@@ -240,6 +217,29 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 5,
+  },
+  cancelButton: {
+    backgroundColor: 'red',
+    padding: 10,
+    borderRadius: 5,
+    marginTop: 10,
+  },
+  cancelButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  input: {
+    width: '100%',
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 5,
+    padding: 10,
+    marginBottom: 10,
+  },
+  listContainerBios: {
+    flex: 1,
+    alignItems: 'center',
+    marginTop: 20,
   },
   modalContainer: {
     flex: 1,
@@ -259,13 +259,23 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 10,
   },
-  input: {
+  navBar: {
     width: '100%',
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 5,
-    padding: 10,
-    marginBottom: 10,
+    height: 60,
+    backgroundColor: '#333',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+  },
+  navTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: 'white',
+  },
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#f8f8f8',
   },
   saveButton: {
     backgroundColor: 'green',
@@ -274,16 +284,6 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   saveButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
-  cancelButton: {
-    backgroundColor: 'red',
-    padding: 10,
-    borderRadius: 5,
-    marginTop: 10,
-  },
-  cancelButtonText: {
     color: 'white',
     fontWeight: 'bold',
   },
