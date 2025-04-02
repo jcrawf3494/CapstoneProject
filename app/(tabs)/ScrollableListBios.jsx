@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, FlatList, TouchableOpacity, TextInput, Button, StyleSheet } from "react-native";
+import { View, Text, FlatList, TouchableOpacity, TextInput, Button, StyleSheet, CheckBox } from "react-native";
 import Icon from 'react-native-vector-icons/FontAwesome';
+
 
 
 const ScrollableListBios = ({ title, data }) => {
     const [profiles, setProfiles] = useState([]);
     const [selectedProfile, setSelectedProfile] = useState(null);
+    const [filteredProfiles, setFilteredProfiles] = useState([]);
+    const [searchQuery, setSearchQuery] = useState("");
     const [aiGeneratedBio, setAiGeneratedBio] = useState("");
 
     useEffect(() => {
@@ -14,6 +17,21 @@ const ScrollableListBios = ({ title, data }) => {
             .then((data) => setProfiles(data))
             .catch((error) => console.error("Error fetching profiles:", error));
     }, []);
+
+    const handleSearch = (query) => {
+      setSearchQuery(query);
+      if (query.trim() === "") {
+          setFilteredProfiles(profiles);
+      } else {
+          const filtered = profiles.filter(profile =>
+              profile.id.toString().includes(query) ||
+              profile.name.toLowerCase().includes(query.toLowerCase()) ||
+              profile.email.toLowerCase().includes(query.toLowerCase()) ||
+              profile.pet_name.toLowerCase().includes(query.toLowerCase())
+          );
+          setFilteredProfiles(filtered);
+      }
+  };
 
     const handleSelectProfile = (profile) => {
         setSelectedProfile(profile);
@@ -28,14 +46,23 @@ const ScrollableListBios = ({ title, data }) => {
         <View style={styles.listContainerBios}>
           <Text style={styles.header}>{title}</Text>
 
+           {/* Search Bar */}
+           <TextInput
+                style={styles.searchBar}
+                placeholder="Search profiles..."
+                value={searchQuery}
+                onChangeText={handleSearch}
+            />
+
           
             <FlatList
-                data={profiles}
+                data={searchQuery ? filteredProfiles : profiles} // Show full list when no search is active
                 keyExtractor={(item) => item.id.toString()}
                 renderItem={({ item }) => (
                     <TouchableOpacity onPress={() => handleSelectProfile(item)} style={{ padding: 10, borderBottomWidth: 1 }}>
                         <View style={styles.item}>
                           <Text style={styles.title}>{item.name}</Text>
+                          <Text style={styles.description}>Foster ID: {item.id}</Text>
                           <Text style={styles.description}>Email: {item.email}</Text>
                           <Text style={styles.description}>Phone: {item.phone_number}</Text>
                           <Text style={styles.description}>Pet Name: {item.pet_name}</Text>
@@ -54,20 +81,27 @@ const ScrollableListBios = ({ title, data }) => {
                   </View>
 
                     <Text style={styles.selectedProfileTitle}>{selectedProfile.name}</Text>
-                    <Text style={styles.selectedProfileDescription}>Phone: {selectedProfile.phone_number}</Text>
+                    <Text style={styles.selectedProfileDescription}>Foster ID: {selectedProfile.id}</Text>
                     <Text style={styles.selectedProfileDescription}>Email: {selectedProfile.email}</Text>
-                    <Text style={styles.selectedProfileDescription}>Pet: {selectedProfile.pet_name}</Text>
+                    <Text style={styles.selectedProfileDescription}>Phone: {selectedProfile.phone_number}</Text>
+                    <Text style={styles.selectedProfileDescription}>Pet Name: {selectedProfile.pet_name}</Text>
                     <Text style={styles.selectedProfileDescription}>Preferred Contact Time: {selectedProfile.preferred_contact_time}</Text>
+
+                    {/* Email Sent to Photography Team Checkbox */}
+                    <View style={styles.checkboxContainer}>
+                        <CheckBox
+                            value={selectedProfile.email_sent} // Controlled by database value
+                            disabled={true} // Read-only checkbox
+                        />
+                        <Text style={styles.checkboxLabel}>Email Sent to Photography Team</Text>
+                    </View>
 
                     {/* AI-Generated Bio Section */}
                     <Text style={styles.bioTitle}>AI-Generated Bio:</Text>
-                    <TextInput
-                        value={aiGeneratedBio}
-                        onChangeText={setAiGeneratedBio}
-                        placeholder="AI-generated bio will appear here..."
-                        style={styles.bioBox}
-                    />
-                    {/* <Button title="Generate Bio" onPress={() => generateBio(selectedProfile)} /> */}
+                    <View style={styles.bioBox}>
+                      <Text style={styles.transcription}>{selectedProfile.transcription}</Text>
+                    </View>
+                    
                 </View>
             )}
             
@@ -85,39 +119,39 @@ const styles = StyleSheet.create({
     top: 10,
     zIndex: 1,
   },
-  bioTitle: {
-    marginTop: 10,
-    fontWeight: "bold"
-  },
   bioBox: {
     borderWidth: 1,
+    borderRadius: 5,
     padding: 5,
-    marginTop: 5 
+    marginTop: 5, 
+    width: '50%',
+    height: '60%',
+    alignSelf: "center"
   },
-  selectedProfileTitle: {
-    marginTop: '5%',
-    marginLeft: '40%',
-    fontSize: 18,
-    fontWeight: 'bold',
+  bioTitle: {
+    marginTop: 10,
+    fontWeight: "bold",
+    marginLeft: '25%',
   },
-  selectedProfileDescription: {
-    marginLeft: '40%',
+  checkboxContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 10,
+    marginLeft: "40%",
+  },
+  checkboxLabel: {
+    marginLeft: 8,
+    fontSize: 16,
+  },
+  description: {
     fontSize: 14,
     color: 'gray',
   },
-  selectedProfileContainer: {
-    padding: 10,
-    position: 'relative', // Ensure correct positioning for the back button
+  flatList: {
+    flex: 1,
   },
-  listContainerBios: {
-    width: '90%',
-    height: '90%',
-    borderWidth: 3,
-    borderColor: 'gold',
-    borderRadius: 10,
-    backgroundColor: '#fff',
-    overflow: 'hidden',
-    marginBottom: 20,
+  flatListContent: {
+    paddingBottom: 10,
   },
   header: {
     fontSize: 20,
@@ -129,30 +163,56 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 8,
     borderTopRightRadius: 8,
   },
-  flatList: {
-    flex: 1,
-  },
-  flatListContent: {
-    paddingBottom: 10,
-  },
   item: {
     padding: 10,
     marginVertical: 5,
     marginHorizontal: 5,
     backgroundColor: '#fff',
     borderRadius: 8,
-    // shadowColor: '#000',
-    // shadowOpacity: 0.1,
-    // shadowOffset: { width: 0, height: 2 },
     elevation: 3,
+  },
+  listContainerBios: {
+    width: '90%',
+    height: '90%',
+    borderWidth: 3,
+    borderColor: 'gold',
+    borderRadius: 10,
+    backgroundColor: '#fff',
+    overflow: 'hidden',
+    marginBottom: 20,
+  },
+  searchBar: {
+    height: 40,
+    borderColor: 'gray',
+    borderWidth: 1,
+    borderRadius: 8,
+    margin: 10,
+    paddingLeft: 10,
+    backgroundColor: '#f5f5f5',
+    fontSize: 16,
+  },
+  selectedProfileDescription: {
+    marginLeft: '40%',
+    fontSize: 14,
+    color: 'gray',
+  },
+  selectedProfileTitle: {
+    marginTop: '5%',
+    marginLeft: '40%',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  selectedProfileContainer: {
+    padding: 10,
+    position: 'relative', // Ensure correct positioning for the back button
   },
   title: {
     fontSize: 18,
     fontWeight: 'bold',
   },
-  description: {
-    fontSize: 14,
-    color: 'gray',
+  transcription: {
+    textAlignVertical: 'justifytop',
+    justifyContent: 'center',
   },
 });
 
