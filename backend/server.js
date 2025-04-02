@@ -220,7 +220,7 @@ setInterval(async () => {
 
       // Reset the flag so it only sends once
       await pool.query(
-        'UPDATE fosters SET photographyneeded = false WHERE call_id = $1',
+        'UPDATE fosters SET photographyneeded = false, email_sent = true WHERE call_id = $1',
         [call_id]
       );
     }
