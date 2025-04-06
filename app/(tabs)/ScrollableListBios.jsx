@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, FlatList, TouchableOpacity, TextInput, Button, StyleSheet, CheckBox } from "react-native";
+import { View, Text, FlatList, TouchableOpacity, TextInput, Button, StyleSheet, CheckBox, ScrollView } from "react-native";
 import Icon from 'react-native-vector-icons/FontAwesome';
 
 
@@ -10,13 +10,37 @@ const ScrollableListBios = ({ title, data }) => {
     const [filteredProfiles, setFilteredProfiles] = useState([]);
     const [searchQuery, setSearchQuery] = useState("");
     const [aiGeneratedBio, setAiGeneratedBio] = useState("");
+    const [emailSent, setEmailSent] = useState(false); // State for checkbox
 
     useEffect(() => {
         fetch("http://localhost:8080/api/profiles")
             .then((response) => response.json())
-            .then((data) => setProfiles(data))
+            .then((data) => {
+              console.log("Fetched profiles:", data);
+               setProfiles(data);
+            })
             .catch((error) => console.error("Error fetching profiles:", error));
     }, []);
+
+    const handleDeleteProfile = async (id) => {
+      const confirmDelete = window.confirm("Are you sure you want to delete this profile?");
+      if (!confirmDelete) return;
+    
+      try {
+        await fetch(`http://localhost:8080/api/fosters/${id}`, {
+          method: 'DELETE',
+        });
+    
+        // Remove profile from local state
+        const updatedProfiles = profiles.filter(profile => profile.id !== id);
+        setProfiles(updatedProfiles);
+        setFilteredProfiles(updatedProfiles);
+        setSelectedProfile(null); // Go back to the list view after deletion
+      } catch (error) {
+        console.error("Failed to delete profile:", error);
+        alert("Failed to delete profile. Please try again.");
+      }
+    };
 
     const handleSearch = (query) => {
       setSearchQuery(query);
@@ -73,7 +97,9 @@ const ScrollableListBios = ({ title, data }) => {
             />
 
             {selectedProfile && (
+              
                 <View style={styles.listContainerBios}>
+                  <ScrollView contentContainerStyle={styles.scrollViewContent}>
                   <View style={styles.selectedProfileContainer}>
                     <TouchableOpacity onPress={handleBackToList} style={styles.backButton}>
                       <Icon name="arrow-left" size={20} color="#fff" /> 
@@ -90,7 +116,7 @@ const ScrollableListBios = ({ title, data }) => {
                     {/* Email Sent to Photography Team Checkbox */}
                     <View style={styles.checkboxContainer}>
                         <CheckBox
-                            value={selectedProfile.email_sent} // Controlled by database value
+                            value={selectedProfile?.email_sent === true} // Controlled by database value
                             disabled={true} // Read-only checkbox
                         />
                         <Text style={styles.checkboxLabel}>Email Sent to Photography Team</Text>
@@ -101,6 +127,18 @@ const ScrollableListBios = ({ title, data }) => {
                     <View style={styles.bioBox}>
                       <Text style={styles.transcription}>{selectedProfile.transcription}</Text>
                     </View>
+
+                    {/* Delete Profile Button */}
+                    <View style={{ marginTop: 20, alignItems: 'center' }}>
+                      <TouchableOpacity
+                        onPress={() => handleDeleteProfile(selectedProfile.id)}
+                        style={styles.deleteButton}
+                    >
+                        <Text style={{ color: '#fff', fontWeight: 'bold' }}>Delete Profile</Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    </ScrollView>
                     
                 </View>
             )}
@@ -143,6 +181,13 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     fontSize: 16,
   },
+  deleteButton: {
+    backgroundColor: '#d9534f',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+
+  },
   description: {
     fontSize: 14,
     color: 'gray',
@@ -180,6 +225,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     overflow: 'hidden',
     marginBottom: 20,
+  },
+  scrollViewContent: {
+    paddingBottom: 70,
   },
   searchBar: {
     height: 40,
