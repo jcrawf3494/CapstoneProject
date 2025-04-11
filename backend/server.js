@@ -1,25 +1,28 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const bodyParser = require('body-parser');
 const { Pool } = require('pg');
 const nodemailer = require('nodemailer');
-const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args)); // For Node 18+
+const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args)); // For Node 18+
 
 const app = express();
 const PORT = process.env.PORT || 8080;
 
 // Middleware
-app.use(bodyParser.json());
+app.use(express.json()); // replaced body-parser
 app.use(cors({
-  origin: ['http://localhost:8080', 'http://localhost:8081'],
+  origin: [
+    'http://localhost:8080',
+    'http://localhost:8081',
+    'https://aaupetrescue-hta0efhnh2gtgrcv.eastus2-01.azurewebsites.net' // Azure deployment URL
+  ],
   methods: 'GET,POST,PUT,DELETE,OPTIONS',
   allowedHeaders: 'Content-Type,Authorization'
 }));
 
 // PostgreSQL Database Connection
 const pool = new Pool({
-  connectionString: "REQUEST FROM KATLIN",
+  connectionString: process.env.Database_URL,
   ssl: { rejectUnauthorized: false }
 });
 
@@ -53,57 +56,54 @@ app.post('/api/send-photo-request', async (req, res) => {
 });
 
 app.post('/api/check-photo-request', async (req, res) => {
-    const { foster } = req.body;
-  
-    try {
-      // 1. Look up the foster entry from the DB using their call_ID from Retell AI
-      const result = await pool.query(
-        'SELECT * FROM fosters WHERE call_id = $1',
-        [foster.call_id]
+  const { foster } = req.body;
+
+  try {
+    const result = await pool.query(
+      'SELECT * FROM fosters WHERE call_id = $1',
+      [foster.call_id]
+    );
+
+    const dbFoster = result.rows[0];
+
+    if (dbFoster && dbFoster.photographyneeded === true) {
+      const {
+        id,
+        name: fosterName,
+        email,
+        pet_name: petName,
+        preferred_contact_time: contactTime
+      } = dbFoster;
+
+      const mailOptions = {
+        from: process.env.EMAIL_USER,
+        to: 'angelsphotographyemail@gmail.com',
+        subject: `Photography Needed for ${petName}`,
+        text: `📸 New Photography Request\n\nFoster Name: ${fosterName}\nFoster Email: ${email}\nFoster ID: ${id}\nPet Name: ${petName}\nPreferred Contact Time: ${contactTime}\n\nPlease reach out to the foster to schedule a photoshoot for their pet!\n\nThanks!\nAngels Among Us Pet Rescue`
+      };
+
+      await transporter.sendMail(mailOptions);
+
+      await pool.query(
+        'UPDATE fosters SET photographyneeded = false WHERE call_id = $1',
+        [dbFoster.call_id]
       );
-  
-      const dbFoster = result.rows[0];
-  
-      // 2. If photography is needed, send email and mark it as completed
-      if (dbFoster && dbFoster.photographyneeded === true) {
-        const {
-          id,
-          name: fosterName,
-          email,
-          pet_name: petName,
-          preferred_contact_time: contactTime
-        } = dbFoster;
 
-        const mailOptions = {
-          from: process.env.EMAIL_USER,
-          to: 'angelsphotographyemail@gmail.com',
-          subject: `Photography Needed for ${petName}`,
-          text: `📸 New Photography Request\n\nFoster Name: ${fosterName}\nFoster Email: ${email}\nFoster ID: ${id}\nPet Name: ${petName}\nPreferred Contact Time: ${contactTime}\n\nPlease reach out to the foster to schedule a photoshoot for their pet!\n\nThanks!\nAngels Among Us Pet Rescue`
-        };
-
-        await transporter.sendMail(mailOptions);
-  
-        // 3. RESET flag - mark as false so email only sends once
-        await pool.query(
-          'UPDATE fosters SET photographyneeded = false WHERE call_id = $1',
-          [dbFoster.call_id]
-        );
-  
-        res.status(200).json({ message: 'Photography team notified & flag rest' });
-      } else {
-        res.status(200).json({ message: 'No email needed – photographyNeeded is false or missing' });
-      }
-    } catch (error) {
-      console.error('Error in /api/check-photo-request route:', error);
-      res.status(500).json({ error: 'Server error while processing transcription' });
+      res.status(200).json({ message: 'Photography team notified & flag reset' });
+    } else {
+      res.status(200).json({ message: 'No email needed – photographyNeeded is false or missing' });
     }
-  });
+  } catch (error) {
+    console.error('Error in /api/check-photo-request route:', error);
+    res.status(500).json({ error: 'Server error while processing transcription' });
+  }
+});
 
 // Route: test email functionality
 app.get('/api/test-email', async (req, res) => {
   const mailOptions = {
     from: process.env.EMAIL_USER,
-    to: process.env.EMAIL_USER, // send test email to yourself
+    to: process.env.EMAIL_USER,
     subject: 'Test Email from AAUPR Backend',
     text: 'Hi there! This is a test email sent from your backend using Nodemailer. If you received this, your setup is working!'
   };
@@ -189,7 +189,7 @@ app.get('/', (req, res) => {
   res.send('Welcome to the AAUPR Backend API!');
 });
 
-// Automatic background check every 60 seconds
+// Automatic background check every 5 minutes
 setInterval(async () => {
   try {
     const result = await pool.query(
@@ -210,15 +210,13 @@ setInterval(async () => {
       const mailOptions = {
         from: process.env.EMAIL_USER,
         to: 'angelsphotographyemail@gmail.com',
-        subject: ` Photography Needed for ${petName}`,
-        text: `Hello Photography Team,\n\nA foster has completed an interview and indicated they do not have photos of their pet.\n\nFoster Info:\n• Name: ${fosterName}\n• Email: ${email}\n• Foster ID: ${id}\n• Pet Name: ${petName}\n• Preferred Contact Time: ${contactTime}\n\nPlease reach out to schedule a photography session!\n\nThank you,\nAngels Among Us Pet Rescue`
+        subject: `Photography Needed for ${petName}`,
+        text: `Hello Photography Team,\n\nA foster has completed an interview and indicated they do not have photos of their pet.\n\nFoster Info:\n• Name: ${fosterName}\n• Email: ${email}\n• Phone: ${phone}\n• Foster ID: ${id}\n• Pet Name: ${petName}\n• Preferred Contact Time: ${contactTime}\n\nPlease reach out to schedule a photography session!\n\nThank you,\nAngels Among Us Pet Rescue`
       };
 
-      // Send the email
       await transporter.sendMail(mailOptions);
-      console.log(` Email sent for foster ID ${id} - ${fosterName}`);
+      console.log(`Email sent for foster ID ${id} - ${fosterName}`);
 
-      // Reset the flag so it only sends once
       await pool.query(
         'UPDATE fosters SET photographyneeded = false, email_sent = true WHERE call_id = $1',
         [call_id]
@@ -226,12 +224,11 @@ setInterval(async () => {
     }
 
   } catch (error) {
-    console.error(' Error in background photography email job:', error);
+    console.error('Error in background photography email job:', error);
   }
-}, 300000); // Runs every 60,000ms = 60 seconds
-
+}, 300000); // 5 minutes
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
